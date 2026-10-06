@@ -2,7 +2,20 @@
 
 A fork of [Fabric Loom](https://github.com/FabricMC/fabric-loom) that takes less disk space when you build several mods or Minecraft versions on one machine.
 
-What's different:
+## Why
+
+I build my mods for every Minecraft version and loader they support. For Konfig that's 34 Minecraft versions and 85 builds. Fabric Loom, NeoForm Runtime, and Minecraft Mavenizer each keep a cache of Minecraft jars in the Gradle home, then copy those jars into every project again. Konfig's project folders took 10.3 GiB, and about 8 GiB of that was copies.
+
+The Amber forks of all three share or link those jars instead, so each project keeps little more than its own build output.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="amber/disk-usage-dark.svg">
+  <img alt="Konfig's project folders take 10.3 GiB with the upstream tools and 2.3 GiB with the Amber toolchain" src="amber/disk-usage-light.svg">
+</picture>
+
+On a copy-on-write file system like Btrfs, XFS, or a Windows Dev Drive, plain copies are already cheap, so the savings there are smaller.
+
+## What's different
 
 - Minecraft jars processed only from your dependencies (injected interfaces, mod javadoc, dependency access wideners) are stored once and shared between projects, instead of again in every project.
 - The `.backup` copy kept next to each Minecraft jar is a hard link, so it doesn't take extra space.
