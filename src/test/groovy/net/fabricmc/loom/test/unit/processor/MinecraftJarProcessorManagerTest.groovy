@@ -27,8 +27,13 @@ package net.fabricmc.loom.test.unit.processor
 import spock.lang.Specification
 
 import net.fabricmc.loom.api.processor.SpecContext
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor
+import net.fabricmc.loom.configuration.processors.JsrAnnotationRemapperProcessor
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager
+import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.test.util.processor.TestMinecraftJarProcessor
+import net.fabricmc.loom.util.fmj.FabricModJson
+import net.fabricmc.loom.util.fmj.ModEnvironment
 
 class MinecraftJarProcessorManagerTest extends Specification {
 	def "Cache value matches"() {
@@ -58,5 +63,27 @@ class MinecraftJarProcessorManagerTest extends Specification {
 		manager1.jarHash != manager2.jarHash
 		manager1.jarHash == "a714eb2de6"
 		manager2.jarHash == "eb6faafa72"
+	}
+
+	def "Shareable between projects only without project-specific inputs"() {
+		given:
+		def specContext = Mock(SpecContext)
+		def mod = Mock(FabricModJson.Mockable)
+		mod.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		mod.getId() >> "modid"
+		specContext.modDependenciesCompileRuntime() >> [mod]
+
+		def localFile = new File("src/test/resources/accesswidener/AccessWidenerJarProcessorTest.accesswidener")
+		def dependencyAw = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(null))
+		def localAw = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(localFile))
+		def jsr = new JsrAnnotationRemapperProcessor("JsrAnnotations")
+
+		expect:
+		MinecraftJarProcessorManager.create([dependencyAw, jsr], specContext).shareableBetweenProjects
+		!MinecraftJarProcessorManager.create([localAw, jsr], specContext).shareableBetweenProjects
+		!MinecraftJarProcessorManager.create([
+			jsr,
+			new TestMinecraftJarProcessor(input: "Test1")
+		], specContext).shareableBetweenProjects
 	}
 }

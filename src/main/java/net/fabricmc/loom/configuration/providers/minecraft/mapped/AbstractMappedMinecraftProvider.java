@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -145,7 +146,32 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		for (MinecraftJar minecraftJar : minecraftJars) {
-			Files.copy(minecraftJar.getPath(), getBackupJarPath(minecraftJar), StandardCopyOption.REPLACE_EXISTING);
+			// genSources replaces the jar with Files.move instead of writing into it, so the backup can share its contents
+			final Path backupJar = getBackupJarPath(minecraftJar);
+			final Path tempJar = tempSibling(backupJar);
+
+			try {
+				Files.createLink(tempJar, minecraftJar.getPath());
+			} catch (UnsupportedOperationException | IOException e) {
+				Files.copy(minecraftJar.getPath(), tempJar, StandardCopyOption.REPLACE_EXISTING);
+			}
+
+			moveIntoPlace(tempJar, backupJar);
+		}
+	}
+
+	static Path tempSibling(Path path) throws IOException {
+		final Path tempPath = path.resolveSibling(path.getFileName() + "." + ProcessHandle.current().pid() + ".tmp");
+		Files.deleteIfExists(tempPath);
+		return tempPath;
+	}
+
+	// Concurrent builds may share global outputs, so never expose a partially written file
+	static void moveIntoPlace(Path source, Path target) throws IOException {
+		try {
+			Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		} catch (AtomicMoveNotSupportedException e) {
+			Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
 		}
 	}
 

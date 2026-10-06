@@ -45,6 +45,9 @@ import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.accesswidener.LocalAccessWidenerEntry;
+import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.speccontext.DeobfSpecContext;
 import net.fabricmc.loom.configuration.processors.speccontext.RemappedSpecContext;
 import net.fabricmc.loom.util.Checksum;
@@ -118,6 +121,26 @@ public final class MinecraftJarProcessorManager {
 		}
 
 		return sj.toString();
+	}
+
+	/**
+	 * Whether the processed jar only depends on inputs that hash by content and come from dependencies,
+	 * so that every project with the same processors can share one copy.
+	 */
+	public boolean isShareableBetweenProjects() {
+		return jarProcessors.stream().allMatch(entry -> {
+			if (entry.processor() instanceof InterfaceInjectionProcessor
+					|| entry.processor() instanceof ModJavadocProcessor
+					|| entry.processor() instanceof JsrAnnotationRemapperProcessor) {
+				return true;
+			}
+
+			if (entry.processor() instanceof AccessWidenerJarProcessor && entry.spec() instanceof AccessWidenerJarProcessor.Spec spec) {
+				return spec.accessWideners().stream().noneMatch(LocalAccessWidenerEntry.class::isInstance);
+			}
+
+			return false;
+		});
 	}
 
 	public String getJarHash() {

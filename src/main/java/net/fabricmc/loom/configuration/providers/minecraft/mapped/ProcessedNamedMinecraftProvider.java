@@ -91,21 +91,30 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	@Override
 	public MavenScope getMavenScope() {
-		return MavenScope.LOCAL;
+		// Jars named by the same processor hash are identical, so share them unless a project-specific input is involved
+		return jarProcessorManager.isShareableBetweenProjects() ? MavenScope.GLOBAL : MavenScope.LOCAL;
 	}
 
 	private void processJars(Map<MinecraftJar, MinecraftJar> minecraftJarMap, ConfigContext configContext) throws IOException {
 		for (Map.Entry<MinecraftJar, MinecraftJar> entry : minecraftJarMap.entrySet()) {
 			final MinecraftJar minecraftJar = entry.getKey();
 			final MinecraftJar outputJar = entry.getValue();
-			deleteSimilarJars(outputJar.getPath());
+
+			if (getMavenScope() == MavenScope.LOCAL) {
+				deleteSimilarJars(outputJar.getPath());
+			}
 
 			final LocalMavenHelper mavenHelper = getMavenHelper(minecraftJar.getType());
-			final Path outputPath = mavenHelper.copyToMaven(minecraftJar.getPath(), null);
+			final Path outputPath = mavenHelper.getOutputFile(null);
 
 			assert outputJar.getPath().equals(outputPath);
 
-			jarProcessorManager.processJar(outputPath, new ProcessorContextImpl(configContext, minecraftJar));
+			Files.createDirectories(outputPath.getParent());
+			mavenHelper.savePom();
+			final Path tempPath = tempSibling(outputPath);
+			Files.copy(minecraftJar.getPath(), tempPath);
+			jarProcessorManager.processJar(tempPath, new ProcessorContextImpl(configContext, minecraftJar));
+			moveIntoPlace(tempPath, outputPath);
 		}
 	}
 
