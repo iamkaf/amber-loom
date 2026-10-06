@@ -287,12 +287,11 @@ import org.gradle.util.GradleVersion
 publishing {
 	repositories {
 		maven {
-			if (ENV.MAVEN_URL) {
-				url ENV.MAVEN_URL
-				credentials {
-					username ENV.MAVEN_USERNAME
-					password ENV.MAVEN_PASSWORD
-				}
+			name = 'KafMaven'
+			url = 'https://z.kaf.sh/releases'
+			credentials {
+				username = ENV.MAVEN_PUBLISH_USERNAME
+				password = ENV.MAVEN_PUBLISH_PASSWORD
 			}
 		}
 	}
