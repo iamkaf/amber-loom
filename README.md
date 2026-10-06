@@ -1,4 +1,18 @@
-# Fabric Loom
+# Amber Loom
+
+A fork of [Fabric Loom](https://github.com/FabricMC/fabric-loom) that takes less disk space when you build several mods or Minecraft versions on one machine.
+
+What's different:
+
+- Minecraft jars processed only from your dependencies (injected interfaces, mod javadoc, dependency access wideners) are stored once and shared between projects, instead of again in every project.
+- The `.backup` copy kept next to each Minecraft jar is a hard link, so it doesn't take extra space.
+- Access wideners from dependencies are hashed by their contents, so republishing a mod with a changed access widener under the same version rebuilds the Minecraft jar.
+
+Apply `com.iamkaf.amber.loom`, or `com.iamkaf.amber.loom-remap` for obfuscated Minecraft versions, from `https://maven.kaf.sh`. Changes that would help everyone go back to Fabric Loom when they're ready.
+
+The original Fabric Loom readme follows.
+
+## Fabric Loom
 
 A [Gradle](https://gradle.org/) plugin to setup a deobfuscated development environment for Minecraft mods. Primarily used in the Fabric toolchain.
 
