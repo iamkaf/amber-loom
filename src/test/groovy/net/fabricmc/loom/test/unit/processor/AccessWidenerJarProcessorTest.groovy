@@ -30,6 +30,7 @@ import net.fabricmc.loom.api.processor.SpecContext
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.fmj.FabricModJson
+import net.fabricmc.loom.util.fmj.FabricModJsonSource
 import net.fabricmc.loom.util.fmj.ModEnvironment
 
 class AccessWidenerJarProcessorTest extends Specification {
@@ -55,10 +56,12 @@ class AccessWidenerJarProcessorTest extends Specification {
 
 		def mod1 = Mock(FabricModJson.Mockable)
 		mod1.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		mod1.getSource() >> Stub(FabricModJsonSource) { read(_) >> "accessWidener v2 named".bytes }
 		mod1.getId() >> "modid1"
 
 		def mod2 = Mock(FabricModJson.Mockable)
 		mod2.getClassTweakers() >> ["test2.accesswidener": ModEnvironment.UNIVERSAL]
+		mod2.getSource() >> Stub(FabricModJsonSource) { read(_) >> "accessWidener v2 named".bytes }
 		mod2.getId() >> "modid2"
 
 		specContext.modDependenciesCompileRuntime() >> [mod1, mod2].shuffled()

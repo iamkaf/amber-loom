@@ -33,6 +33,7 @@ import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.test.util.processor.TestMinecraftJarProcessor
 import net.fabricmc.loom.util.fmj.FabricModJson
+import net.fabricmc.loom.util.fmj.FabricModJsonSource
 import net.fabricmc.loom.util.fmj.ModEnvironment
 
 class MinecraftJarProcessorManagerTest extends Specification {
@@ -70,6 +71,7 @@ class MinecraftJarProcessorManagerTest extends Specification {
 		def specContext = Mock(SpecContext)
 		def mod = Mock(FabricModJson.Mockable)
 		mod.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		mod.getSource() >> Stub(FabricModJsonSource) { read(_) >> "accessWidener v2 named".bytes }
 		mod.getId() >> "modid"
 		specContext.modDependenciesCompileRuntime() >> [mod]
 

@@ -28,6 +28,7 @@ import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.accesswidener.ModAccessWidenerEntry
 import net.fabricmc.loom.util.fmj.FabricModJson
+import net.fabricmc.loom.util.fmj.FabricModJsonSource
 import net.fabricmc.loom.util.fmj.ModEnvironment
 
 class ModAccessWidenerEntryTest extends Specification {
@@ -35,6 +36,7 @@ class ModAccessWidenerEntryTest extends Specification {
 		given:
 		def mod = Mock(FabricModJson.Mockable)
 		mod.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		mod.getSource() >> source("accessWidener v2 named")
 
 		when:
 		def entries = ModAccessWidenerEntry.readAll(mod, true)
@@ -45,6 +47,30 @@ class ModAccessWidenerEntryTest extends Specification {
 		entry.path() == "test.accesswidener"
 		entry.environment() == ModEnvironment.UNIVERSAL
 		entry.transitiveOnly()
-		entry.hashCode() == -1218981396
+	}
+
+	def "hash follows access widener content"() {
+		given:
+		def original = Mock(FabricModJson.Mockable)
+		original.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		original.getSource() >> source("accessWidener v2 named accessible class a/B")
+
+		def republished = Mock(FabricModJson.Mockable)
+		republished.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		republished.getSource() >> source("accessWidener v2 named accessible class a/C")
+
+		def unchanged = Mock(FabricModJson.Mockable)
+		unchanged.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		unchanged.getSource() >> source("accessWidener v2 named accessible class a/B")
+
+		expect:
+		ModAccessWidenerEntry.readAll(original, false)[0].hashCode() == ModAccessWidenerEntry.readAll(unchanged, false)[0].hashCode()
+		ModAccessWidenerEntry.readAll(original, false)[0].hashCode() != ModAccessWidenerEntry.readAll(republished, false)[0].hashCode()
+	}
+
+	private FabricModJsonSource source(String contents) {
+		def source = Mock(FabricModJsonSource)
+		source.read(_) >> contents.bytes
+		return source
 	}
 }
